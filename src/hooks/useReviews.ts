@@ -1,26 +1,21 @@
 import useSWR from "swr";
 import { useSearchParams } from "next/navigation";
 import { ReviewsApiResponse } from "../types/ReviewType";
+import { fetcher } from "@/utils/fetcher";
 
-const fetcher = (url: string) =>
-  fetch(url).then((res) => {
-    if (!res.ok) {
-      throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
-    }
-    return res.json();
-  });
+const DEFAULT_LIMIT = 25;
+const DEFAULT_SORT = "-date";
 
 interface UseReviewsParams {
   page?: number;
   count?: number;
   lang?: number;
-  sort?: number;
+  sort?: string;
   q?: string; //query
   stars: string;
 }
 
 export function useReviews(params?: UseReviewsParams) {
-  const DEFAULT_LIMIT = 25;
   const searchParams = useSearchParams();
 
   const finalParams: UseReviewsParams = {
@@ -33,9 +28,7 @@ export function useReviews(params?: UseReviewsParams) {
     lang: searchParams.get("lang")
       ? Number(searchParams.get("lang"))
       : params?.lang,
-    sort: searchParams.get("sort")
-      ? Number(searchParams.get("sort"))
-      : params?.sort,
+    sort: searchParams.get("sort") || params?.sort || DEFAULT_SORT,
     q: searchParams.get("q") || params?.q,
     stars: searchParams.get("stars") || params?.stars || "",
   };
@@ -44,9 +37,9 @@ export function useReviews(params?: UseReviewsParams) {
 
   searchParamsObj.set("count", String(finalParams.count));
 
+  if (finalParams.sort) searchParamsObj.set("sort", finalParams.sort);
   if (finalParams.page) searchParamsObj.set("page", String(finalParams.page));
   if (finalParams.lang) searchParamsObj.set("lang", String(finalParams.lang));
-  if (finalParams.sort) searchParamsObj.set("sort", String(finalParams.sort));
   if (finalParams.q) searchParamsObj.set("q", finalParams.q);
   if (finalParams.stars) searchParamsObj.set("stars", finalParams.stars);
 

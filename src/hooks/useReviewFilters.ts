@@ -81,34 +81,30 @@ export function useReviewFilters(reviews: ReviewsApiResponse | never[]) {
     setAccumulatedReviews([]);
   }, []);
 
-  const setSearchTerm = useCallback(
-    (term: string) => {
-      startTransition(() => {
-        setSearchTermState(term);
-        resetState();
-      });
-    },
-    [resetState]
-  );
-
   const setSelectedRating = useCallback(
     (rating: string) => {
       startTransition(() => {
         setSelectedRatingState(rating);
-      });
 
-      const params = new URLSearchParams(searchParams.toString());
-      if (rating !== "all") {
-        params.set("stars", rating);
-      } else {
-        params.delete("stars");
-      }
-      params.delete("page");
-      resetState();
-      router.push(`${pathname}?${params.toString()}`);
+        const params = new URLSearchParams(searchParams.toString());
+        if (rating !== "all") {
+          params.set("stars", rating);
+        } else {
+          params.delete("stars");
+        }
+        params.delete("page");
+        resetState();
+        router.push(`${pathname}?${params.toString()}`);
+      });
     },
     [searchParams, pathname, router, resetState]
   );
+
+  const setSearchTerm = (term: string) => {
+    startTransition(() => {
+      setSearchTermState(term);
+    });
+  };
 
   const loadMoreReviews = useCallback(() => {
     const nextPage = currentPage + 1;

@@ -99,7 +99,6 @@ function ReviewsContent() {
                 <ReviewCard key={review.id} review={review} />
               ))}
 
-              {/* Load More Button */}
               {currentPage < pages && (
                 <Flex justify="center" p="4">
                   <Button
