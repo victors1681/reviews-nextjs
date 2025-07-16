@@ -105,9 +105,11 @@ function ReviewsContent() {
                     </Flex>
                   </Box>
 
-                  {reviews.map((review) => (
-                    <ReviewCard key={review.id} review={review} />
-                  ))}
+                  <Flex direction="column" gap="3">
+                    {reviews.map((review) => (
+                      <ReviewCard key={review.id} review={review} />
+                    ))}
+                  </Flex>
                 </div>
               ))}
 
