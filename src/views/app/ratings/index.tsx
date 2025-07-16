@@ -1,87 +1,72 @@
 "use client";
-import { Container, Flex, Text, Card } from "@radix-ui/themes";
-import { ReviewType } from "../../../types/ReviewType";
+import { Container, Flex, Text, Button } from "@radix-ui/themes";
+import { Suspense, useEffect, useState } from "react";
 import FilterComponent from "../../../components/FilterComponent";
 import ReviewCard from "../../../components/ReviewCard";
+import ReviewSkeleton from "../../../components/skeleton/ReviewSkeleton";
 import { useReviewFilters } from "../../../hooks/useReviewFilters";
+import { useReviews } from "../../../hooks/useReviews";
 
-const sampleReviews: ReviewType[] = [
-  {
-    id: "1",
-    author: "John Doe",
-    title: "Great product!",
-    review: "I really love this product. It exceeded my expectations.",
-    original_title: "Great product!",
-    original_review: "I really love this product. It exceeded my expectations.",
-    stars: "5",
-    iso: "US",
-    version: "1.0",
-    date: "2025-01-01",
-    deleted: false,
-    has_response: false,
-    product: 1,
-    product_id: 1,
-    product_name: "Awesome Widget",
-    vendor_id: "vendor1",
-    store: "online",
-    weight: 1,
-    predicted_langs: ["en"],
-  },
-  {
-    id: "2",
-    author: "Jane Smith",
-    title: "Could be better",
-    review: "The product is okay but has some issues with durability.",
-    original_title: "Could be better",
-    original_review: "The product is okay but has some issues with durability.",
-    stars: "3",
-    iso: "US",
-    version: "1.0",
-    date: "2025-01-02",
-    deleted: false,
-    has_response: true,
-    product: 1,
-    product_id: 1,
-    product_name: "Awesome Widget",
-    vendor_id: "vendor1",
-    store: "online",
-    weight: 1,
-    predicted_langs: ["en"],
-  },
-  {
-    id: "3",
-    author: "Mike Johnson",
-    title: "Excellent quality",
-    review: "Outstanding build quality and great customer service.",
-    original_title: "Excellent quality",
-    original_review: "Outstanding build quality and great customer service.",
-    stars: "5",
-    iso: "US",
-    version: "1.0",
-    date: "2025-01-03",
-    deleted: false,
-    has_response: false,
-    product: 2,
-    product_id: 2,
-    product_name: "Super Gadget",
-    vendor_id: "vendor2",
-    store: "online",
-    weight: 1,
-    predicted_langs: ["en"],
-  },
-];
+function ReviewsContent() {
+  const { reviews, isLoading, error, pages, currentPage } = useReviews();
+  const [mounted, setMounted] = useState(false);
 
-export default function ReviewsWithFilter() {
   const {
     searchTerm,
     selectedRating,
     setSearchTerm,
     setSelectedRating,
+    loadMoreReviews,
     resetFilters,
     filteredReviews,
     filterStats,
     hasActiveFilters,
-  } = useReviewFilters(sampleReviews);
+    isPending,
+  } = useReviewFilters(reviews);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || isLoading) {
+    return (
+      <Container size="4" p="4">
+        <Flex direction="column" gap="4">
+          <Text size="6" weight="bold">
+            Reviews
+          </Text>
+          <FilterComponent
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            selectedRating={selectedRating}
+            onRatingChange={setSelectedRating}
+            onReset={resetFilters}
+            hasActiveFilters={hasActiveFilters}
+            totalResults={filterStats.total}
+            filteredResults={filterStats.filtered}
+          />
+          <ReviewSkeleton count={6} />
+        </Flex>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container size="4" p="4">
+        <Flex direction="column" gap="4">
+          <Text size="6" weight="bold">
+            Reviews
+          </Text>
+          <Flex justify="center" align="center" p="8">
+            <Text color="red" size="4">
+              Error: {error.message || "Failed to load reviews"}
+            </Text>
+          </Flex>
+        </Flex>
+      </Container>
+    );
+  }
 
   return (
     <Container size="4" p="4">
@@ -103,20 +88,53 @@ export default function ReviewsWithFilter() {
 
         <Flex direction="column" gap="3">
           {filteredReviews.length === 0 ? (
-            <Card>
-              <Flex justify="center" align="center" p="4">
-                <Text color="gray">
-                  No reviews found matching your filters.
-                </Text>
-              </Flex>
-            </Card>
+            <Flex justify="center" align="center" p="8">
+              <Text color="gray" size="4">
+                No reviews found matching your filters.
+              </Text>
+            </Flex>
           ) : (
-            filteredReviews.map((review) => (
-              <ReviewCard key={review.id} review={review} />
-            ))
+            <>
+              {filteredReviews.map((review) => (
+                <ReviewCard key={review.id} review={review} />
+              ))}
+
+              {/* Load More Button */}
+              {currentPage < pages && (
+                <Flex justify="center" p="4">
+                  <Button
+                    onClick={loadMoreReviews}
+                    disabled={isPending}
+                    size="3"
+                    variant="outline"
+                  >
+                    {isPending ? "Loading..." : "Load More Reviews"}
+                  </Button>
+                </Flex>
+              )}
+            </>
           )}
         </Flex>
       </Flex>
     </Container>
+  );
+}
+
+export default function ReviewsWithFilter() {
+  return (
+    <Suspense
+      fallback={
+        <Container size="4" p="4">
+          <Flex direction="column" gap="4">
+            <Text size="6" weight="bold">
+              Reviews
+            </Text>
+            <ReviewSkeleton count={6} />
+          </Flex>
+        </Container>
+      }
+    >
+      <ReviewsContent />
+    </Suspense>
   );
 }
