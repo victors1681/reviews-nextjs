@@ -2,12 +2,16 @@ import { useState, useEffect, useCallback, useTransition } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { ReviewsApiResponse, ReviewType } from "../types/ReviewType";
 import { useDebounce } from "@/utils/debounce";
+import { groupReviewsByDate } from "@/utils/groupReview";
 
 export function useReviewFilters(reviews: ReviewsApiResponse | never[]) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
+  const [groupedReviews, setGroupedReviews] = useState<{
+    [key: string]: ReviewType[];
+  }>({});
 
   const [searchTerm, setSearchTermState] = useState(
     () => searchParams.get("q") || ""
@@ -17,9 +21,6 @@ export function useReviewFilters(reviews: ReviewsApiResponse | never[]) {
   );
   const [currentPage, setCurrentPage] = useState(() =>
     parseInt(searchParams.get("page") || "1")
-  );
-  const [accumulatedReviews, setAccumulatedReviews] = useState<ReviewType[]>(
-    []
   );
 
   const debouncedSearchTerm = useDebounce(searchTerm, 900);
@@ -33,14 +34,18 @@ export function useReviewFilters(reviews: ReviewsApiResponse | never[]) {
       const currentPageFromUrl = parseInt(searchParams.get("page") || "1");
 
       if (currentPageFromUrl === 1) {
-        setAccumulatedReviews(currentReviews);
+        setGroupedReviews(groupReviewsByDate(currentReviews));
       } else {
-        setAccumulatedReviews((prev) => {
-          const existingIds = new Set(prev.map((review) => review.id));
+        setGroupedReviews((prevGrouped) => {
+          const currentAccumulated = Object.values(prevGrouped).flat();
+          const existingIds = new Set(
+            currentAccumulated.map((review) => review.id)
+          );
           const newReviews = currentReviews.filter(
             (review) => !existingIds.has(review.id)
           );
-          return [...prev, ...newReviews];
+          const updated = [...currentAccumulated, ...newReviews];
+          return groupReviewsByDate(updated);
         });
       }
     }
@@ -78,7 +83,7 @@ export function useReviewFilters(reviews: ReviewsApiResponse | never[]) {
 
   const resetState = useCallback(() => {
     setCurrentPage(1);
-    setAccumulatedReviews([]);
+    setGroupedReviews({});
   }, []);
 
   const setSelectedRating = useCallback(
@@ -114,7 +119,7 @@ export function useReviewFilters(reviews: ReviewsApiResponse | never[]) {
 
   const filterStats = {
     total: Array.isArray(reviews) ? 0 : reviews?.total || 0,
-    filtered: accumulatedReviews.length,
+    filtered: Object.values(groupedReviews).flat().length,
     ratingCounts: 0,
   };
 
@@ -139,7 +144,7 @@ export function useReviewFilters(reviews: ReviewsApiResponse | never[]) {
     setSelectedRating,
     loadMoreReviews,
     resetFilters,
-    filteredReviews: accumulatedReviews,
+    groupedReviews,
     filterStats,
     hasActiveFilters: searchTerm !== "" || selectedRating !== "all",
   };

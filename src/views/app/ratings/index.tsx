@@ -1,5 +1,5 @@
 "use client";
-import { Container, Flex, Text, Button } from "@radix-ui/themes";
+import { Container, Flex, Text, Button, Box } from "@radix-ui/themes";
 import { Suspense, useEffect, useState } from "react";
 import FilterComponent from "../../../components/FilterComponent";
 import ReviewCard from "../../../components/ReviewCard";
@@ -18,7 +18,7 @@ function ReviewsContent() {
     setSelectedRating,
     loadMoreReviews,
     resetFilters,
-    filteredReviews,
+    groupedReviews,
     filterStats,
     hasActiveFilters,
     isPending,
@@ -87,7 +87,7 @@ function ReviewsContent() {
         />
 
         <Flex direction="column" gap="3">
-          {filteredReviews.length === 0 ? (
+          {Object.entries(groupedReviews).length === 0 ? (
             <Flex justify="center" align="center" p="8">
               <Text color="gray" size="4">
                 No reviews found matching your filters.
@@ -95,8 +95,20 @@ function ReviewsContent() {
             </Flex>
           ) : (
             <>
-              {filteredReviews.map((review) => (
-                <ReviewCard key={review.id} review={review} />
+              {Object.entries(groupedReviews).map(([group, reviews]) => (
+                <div key={group}>
+                  <Box height="64px" key={group}>
+                    <Flex align="center" justify="center" height="100%">
+                      <Text size="4" weight="bold" mt="2" mb="2">
+                        {group} ({reviews.length})
+                      </Text>
+                    </Flex>
+                  </Box>
+
+                  {reviews.map((review) => (
+                    <ReviewCard key={review.id} review={review} />
+                  ))}
+                </div>
               ))}
 
               {currentPage < pages && (
